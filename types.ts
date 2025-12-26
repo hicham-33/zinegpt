@@ -1,3 +1,4 @@
+
 export type Role = 'user' | 'model';
 
 export type ContentType = 'text' | 'image' | 'audio';
@@ -22,25 +23,25 @@ export interface BotOption {
 
 export const BOTS: BotOption[] = [
   {
+    id: 'zinegpt-pro',
+    name: 'ZineGPT Pro (Image)',
+    description: 'Generates DALL-E style images',
+    model: 'gemini-2.5-flash-image',
+    type: 'image'
+  },
+  {
     id: 'hrilagpt-pro',
-    name: 'Hrilagpt Pro',
+    name: 'Hrilagpt Pro (Text)',
     description: 'Great for everyday tasks',
     model: 'gemini-3-flash-preview',
     type: 'text'
   },
   {
     id: 'hrilagpt-pro-2.1',
-    name: 'Hrilagpt Pro 2.1',
+    name: 'Hrilagpt Pro 2.1 (Reasoning)',
     description: 'Advanced reasoning & coding',
     model: 'gemini-3-pro-preview',
     type: 'text'
-  },
-  {
-    id: 'zinegpt-pro',
-    name: 'ZineGPT Pro',
-    description: 'Generates DALL-E style images',
-    model: 'gemini-2.5-flash-image',
-    type: 'image'
   }
 ];
 

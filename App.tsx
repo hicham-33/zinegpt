@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Menu, Send, Zap, Image as ImageIcon, Sparkles, ChevronDown } from 'lucide-react';
+import { Menu, Send, Zap, Image as ImageIcon, Sparkles, ChevronDown, AlertCircle } from 'lucide-react';
 import { generateText, generateImage } from './services/genai';
 import { Message, BOTS, BotOption } from './types';
 import Sidebar from './components/Sidebar';
@@ -10,6 +10,7 @@ const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  // Default to the first bot (now Image bot based on types.ts update)
   const [selectedBot, setSelectedBot] = useState<BotOption>(BOTS[0]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -76,13 +77,29 @@ const App: React.FC = () => {
 
       setMessages(prev => [...prev, botMsg]);
 
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      console.error("Detailed API Error:", error);
+      
+      // Extract a readable error message
+      let errorMessage = "I'm sorry, I encountered an error.";
+      
+      if (error.message) {
+        if (error.message.includes('API Key')) {
+            errorMessage = "Error: Invalid API Key. Please check your configuration.";
+        } else if (error.message.includes('403') || error.message.includes('permission')) {
+            errorMessage = "Error: Permission denied (403). Your API key might not have access to this model.";
+        } else if (error.message.includes('400')) {
+            errorMessage = "Error: Invalid request (400). The model might not support this specific prompt or configuration.";
+        } else {
+            errorMessage = `Error: ${error.message}`;
+        }
+      }
+
       const errorMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: 'model',
         type: 'text',
-        content: "I'm sorry, I encountered an error. Please check your connection or try again.",
+        content: `⚠️ **${errorMessage}**`,
         timestamp: Date.now()
       };
       setMessages(prev => [...prev, errorMsg]);
@@ -98,8 +115,8 @@ const App: React.FC = () => {
         toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         onNewChat={() => {
             setMessages([]);
-            // Reset to default text bot on new chat if desired
-            if(selectedBot.type === 'image') setSelectedBot(BOTS[0]);
+            // Default to Image bot when starting new chat
+            setSelectedBot(BOTS[0]);
         }}
       />
 
@@ -121,7 +138,7 @@ const App: React.FC = () => {
             >
               <span>{selectedBot.name}</span>
               <span className="text-gray-400 text-xs">
-                {selectedBot.id.includes('2.1') ? '2.1' : (selectedBot.type === 'image' ? 'Img' : '3.0')}
+                {selectedBot.type === 'image' ? 'Img' : '3.0'}
               </span>
               <ChevronDown className="w-4 h-4 text-gray-500" />
             </button>
@@ -162,27 +179,36 @@ const App: React.FC = () => {
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-white px-4 pb-20">
                <div className="mb-6 w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center shadow-inner border border-white/10">
-                  <Sparkles className="w-8 h-8 text-white" />
+                  {selectedBot.type === 'image' ? <ImageIcon className="w-8 h-8 text-purple-400" /> : <Sparkles className="w-8 h-8 text-white" />}
                </div>
-               <h2 className="text-2xl font-semibold mb-8">How can I help you today?</h2>
+               <h2 className="text-2xl font-semibold mb-8">
+                 {selectedBot.type === 'image' ? "What should we create?" : "How can I help you today?"}
+               </h2>
                
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-2xl">
-                  <button onClick={() => setInput("Explain quantum computing in simple terms")} className="group p-4 bg-transparent border border-white/10 rounded-xl hover:bg-[#40414f] text-left transition-all">
-                     <h3 className="font-medium text-sm text-gray-200 mb-1 group-hover:text-white">Explain quantum computing</h3>
-                     <p className="text-xs text-gray-500 group-hover:text-gray-400">in simple terms</p>
-                  </button>
-                  <button onClick={() => setInput("Write a Python script to scrape a website")} className="group p-4 bg-transparent border border-white/10 rounded-xl hover:bg-[#40414f] text-left transition-all">
-                     <h3 className="font-medium text-sm text-gray-200 mb-1 group-hover:text-white">Write a Python script</h3>
-                     <p className="text-xs text-gray-500 group-hover:text-gray-400">to scrape a website</p>
-                  </button>
-                  <button onClick={() => { setSelectedBot(BOTS[2]); setInput("Generate a cyberpunk city with neon lights"); }} className="group p-4 bg-transparent border border-white/10 rounded-xl hover:bg-[#40414f] text-left transition-all">
-                     <h3 className="font-medium text-sm text-gray-200 mb-1 group-hover:text-white">Generate an image</h3>
-                     <p className="text-xs text-gray-500 group-hover:text-gray-400">of a cyberpunk city</p>
-                  </button>
-                  <button onClick={() => setInput("Draft a professional email to a client")} className="group p-4 bg-transparent border border-white/10 rounded-xl hover:bg-[#40414f] text-left transition-all">
-                     <h3 className="font-medium text-sm text-gray-200 mb-1 group-hover:text-white">Draft an email</h3>
-                     <p className="text-xs text-gray-500 group-hover:text-gray-400">requesting a meeting</p>
-                  </button>
+                  {selectedBot.type === 'image' ? (
+                     <>
+                        <button onClick={() => setInput("A futuristic city with neon lights at night")} className="group p-4 bg-transparent border border-white/10 rounded-xl hover:bg-[#40414f] text-left transition-all">
+                            <h3 className="font-medium text-sm text-gray-200 mb-1 group-hover:text-white">A futuristic city</h3>
+                            <p className="text-xs text-gray-500 group-hover:text-gray-400">with neon lights at night</p>
+                        </button>
+                        <button onClick={() => setInput("A cute robot holding a flower in a garden")} className="group p-4 bg-transparent border border-white/10 rounded-xl hover:bg-[#40414f] text-left transition-all">
+                            <h3 className="font-medium text-sm text-gray-200 mb-1 group-hover:text-white">A cute robot</h3>
+                            <p className="text-xs text-gray-500 group-hover:text-gray-400">holding a flower in a garden</p>
+                        </button>
+                     </>
+                  ) : (
+                    <>
+                        <button onClick={() => setInput("Explain quantum computing in simple terms")} className="group p-4 bg-transparent border border-white/10 rounded-xl hover:bg-[#40414f] text-left transition-all">
+                            <h3 className="font-medium text-sm text-gray-200 mb-1 group-hover:text-white">Explain quantum computing</h3>
+                            <p className="text-xs text-gray-500 group-hover:text-gray-400">in simple terms</p>
+                        </button>
+                        <button onClick={() => setInput("Draft a professional email to a client")} className="group p-4 bg-transparent border border-white/10 rounded-xl hover:bg-[#40414f] text-left transition-all">
+                            <h3 className="font-medium text-sm text-gray-200 mb-1 group-hover:text-white">Draft an email</h3>
+                            <p className="text-xs text-gray-500 group-hover:text-gray-400">requesting a meeting</p>
+                        </button>
+                    </>
+                  )}
                </div>
             </div>
           ) : (
