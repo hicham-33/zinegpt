@@ -1,12 +1,25 @@
 import { GoogleGenAI, Modality } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+let aiClient: GoogleGenAI | null = null;
+
+// Lazy initialization to prevent app crash if API key is missing at startup
+const getAiClient = () => {
+  if (!aiClient) {
+    const apiKey = process.env.API_KEY;
+    if (!apiKey) {
+      throw new Error("API Key is missing. Please check your configuration.");
+    }
+    aiClient = new GoogleGenAI({ apiKey: apiKey });
+  }
+  return aiClient;
+};
 
 /**
  * Generates text response using Gemini 3 series
  */
 export async function generateText(model: string, history: any[], prompt: string) {
   try {
+    const ai = getAiClient();
     const chat = ai.chats.create({
       model: model,
       history: history, 
@@ -15,8 +28,6 @@ export async function generateText(model: string, history: any[], prompt: string
       }
     });
     
-    // We are not using streaming for simplicity in this specific "replace" request to keep state management easy,
-    // but typically you'd use sendMessageStream.
     const response = await chat.sendMessage({ message: prompt });
     return response.text || "I couldn't generate a response.";
   } catch (error) {
@@ -30,6 +41,7 @@ export async function generateText(model: string, history: any[], prompt: string
  */
 export async function generateImage(prompt: string): Promise<string> {
   try {
+    const ai = getAiClient();
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
       contents: {
@@ -62,6 +74,7 @@ export async function generateImage(prompt: string): Promise<string> {
  */
 export async function generateSpeech(text: string): Promise<string> {
   try {
+    const ai = getAiClient();
     // Truncate text if too long for a single TTS request to avoid limits/latency
     const safeText = text.slice(0, 500); 
 
@@ -87,12 +100,3 @@ export async function generateSpeech(text: string): Promise<string> {
     throw error;
   }
 }
-
-/**
- * Helper to decode PCM to AudioBuffer for playback (since browser <audio> doesn't play raw PCM)
- * Note: For a simpler implementation in a React component without complex AudioWorklets, 
- * we might rely on the fact that standard HTML5 audio doesn't play PCM easily.
- * However, Gemini TTS returns raw PCM. 
- * 
- * We will return the raw base64 and handle decoding in the component.
- */
