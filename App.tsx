@@ -1,20 +1,27 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Menu, Send, Zap, Image as ImageIcon, Sparkles, ChevronDown, AlertCircle } from 'lucide-react';
+import { Menu, Send, Zap, Image as ImageIcon, Sparkles, ChevronDown, AlertCircle, X } from 'lucide-react';
 import { generateText, generateImage } from './services/genai';
 import { Message, BOTS, BotOption } from './types';
 import Sidebar from './components/Sidebar';
 import ChatMessage from './components/ChatMessage';
 
 const App: React.FC = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // Initialize sidebar closed on mobile, open on desktop
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  // Default to the first bot (now Image bot based on types.ts update)
   const [selectedBot, setSelectedBot] = useState<BotOption>(BOTS[0]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Set initial sidebar state based on window width
+  useEffect(() => {
+    if (window.innerWidth >= 768) {
+      setSidebarOpen(true);
+    }
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -80,7 +87,6 @@ const App: React.FC = () => {
     } catch (error: any) {
       console.error("Detailed API Error:", error);
       
-      // Extract a readable error message
       let errorMessage = "I'm sorry, I encountered an error.";
       
       if (error.message) {
@@ -109,25 +115,33 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen bg-[#343541] overflow-hidden text-gray-100 font-sans">
+    <div className="flex h-[100dvh] bg-[#343541] overflow-hidden text-gray-100 font-sans">
+      {/* Mobile Sidebar Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden animate-in fade-in duration-200"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       <Sidebar 
         isOpen={sidebarOpen} 
         toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         onNewChat={() => {
             setMessages([]);
-            // Default to Image bot when starting new chat
             setSelectedBot(BOTS[0]);
+            if (window.innerWidth < 768) setSidebarOpen(false);
         }}
       />
 
-      <div className="flex-1 flex flex-col h-full relative">
+      <div className="flex-1 flex flex-col h-full relative w-full">
         {/* Top Navigation Bar */}
         <div className="sticky top-0 z-10 p-2 text-gray-200 bg-[#343541] border-b border-white/5 flex items-center justify-between sm:justify-start sm:gap-4">
           <button 
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="p-2 hover:bg-[#40414f] rounded-md text-gray-300 md:hidden"
           >
-            <Menu className="w-5 h-5" />
+            {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
           
           {/* Model Selector */}
@@ -175,13 +189,13 @@ const App: React.FC = () => {
         </div>
 
         {/* Chat Content */}
-        <div className="flex-1 overflow-y-auto scroll-smooth custom-scrollbar">
+        <div className="flex-1 overflow-y-auto scroll-smooth custom-scrollbar w-full">
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-white px-4 pb-20">
                <div className="mb-6 w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center shadow-inner border border-white/10">
                   {selectedBot.type === 'image' ? <ImageIcon className="w-8 h-8 text-purple-400" /> : <Sparkles className="w-8 h-8 text-white" />}
                </div>
-               <h2 className="text-2xl font-semibold mb-8">
+               <h2 className="text-2xl font-semibold mb-8 text-center">
                  {selectedBot.type === 'image' ? "What should we create?" : "How can I help you today?"}
                </h2>
                
@@ -237,7 +251,7 @@ const App: React.FC = () => {
         </div>
 
         {/* Input Area */}
-        <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-[#343541] via-[#343541] to-transparent pt-10 pb-6 px-4">
+        <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-[#343541] via-[#343541] to-transparent pt-6 pb-6 px-4">
           <div className="max-w-3xl mx-auto">
              <form onSubmit={handleSend} className="relative flex flex-col w-full p-3 bg-[#40414f] border border-black/10 dark:border-gray-900/50 rounded-xl shadow-[0_0_10px_rgba(0,0,0,0.1)] focus-within:ring-1 focus-within:ring-gray-500/50 focus-within:border-gray-500/50 transition-all">
                 <textarea

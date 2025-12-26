@@ -54,11 +54,15 @@ export async function generateText(model: string, history: any[], prompt: string
 export async function generateImage(prompt: string): Promise<string> {
   try {
     const ai = getAiClient();
+    // Use the array format for contents to ensure compatibility
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
-      contents: {
-        parts: [{ text: prompt }],
-      },
+      contents: [
+        { 
+          role: 'user',
+          parts: [{ text: prompt }] 
+        }
+      ],
       config: {
         imageConfig: {
           aspectRatio: "1:1",

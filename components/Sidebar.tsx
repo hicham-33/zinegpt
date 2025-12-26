@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, MessageSquare, Settings, User, Trash2, LogOut } from 'lucide-react';
+import { Plus, MessageSquare, Settings, Trash2 } from 'lucide-react';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -11,9 +11,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, onNewChat }) =
   return (
     <div 
       className={`
-        fixed inset-y-0 left-0 z-50 bg-[#202123] text-white transition-all duration-300 flex flex-col border-r border-white/5
-        ${isOpen ? 'w-[260px] translate-x-0' : 'w-0 -translate-x-full opacity-0 overflow-hidden'}
-        md:relative md:translate-x-0 md:opacity-100 ${isOpen ? 'md:w-[260px]' : 'md:w-0'}
+        fixed inset-y-0 left-0 z-50 bg-[#202123] text-white transition-transform duration-300 flex flex-col border-r border-white/5 w-[260px]
+        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+        md:relative md:translate-x-0 ${isOpen ? 'md:w-[260px]' : 'md:w-0 md:overflow-hidden'}
       `}
     >
       <div className="p-3 flex-1 overflow-hidden flex flex-col">
