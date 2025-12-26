@@ -5,10 +5,22 @@ let aiClient: GoogleGenAI | null = null;
 // Lazy initialization to prevent app crash if API key is missing at startup
 const getAiClient = () => {
   if (!aiClient) {
-    const apiKey = process.env.API_KEY;
+    // Attempt to retrieve API Key from various possible locations
+    // 1. window.process.env (our polyfill)
+    // 2. process.env (bundler injected)
+    let apiKey = '';
+    
+    if (typeof window !== 'undefined' && (window as any).process?.env?.API_KEY) {
+      apiKey = (window as any).process.env.API_KEY;
+    } else if (typeof process !== 'undefined' && process.env?.API_KEY) {
+      apiKey = process.env.API_KEY;
+    }
+
     if (!apiKey) {
+      console.error("API Key is missing. Please check index.html polyfill or environment variables.");
       throw new Error("API Key is missing. Please check your configuration.");
     }
+    
     aiClient = new GoogleGenAI({ apiKey: apiKey });
   }
   return aiClient;
